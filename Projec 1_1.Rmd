@@ -1,0 +1,117 @@
+---
+title: "Reproducible Research_P1"
+author: "Santi"
+date: "6/7/2562"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Reproducible Research_P1
+Peer-graded Assignment: Course Project 1 Skip to content
+
+Search or jump to…
+
+Pull requests Issues Marketplace Explore
+
+@santimai 18 76 31,876 rdpeng/RepData_PeerAssessment1 Code Issues 5 Pull requests 266 Projects 0 Wiki Security Insights Peer Assessment 1 for Reproducible Research 13 commits 1 branch 0 releases 3 contributors @rdpeng rdpeng figures --> figure 1 Latest commit 80edf39 on Oct 22, 2014 Type	Name	Latest commit message	Commit time doc	Update instructions to add SHA-1 hash	6 years ago instructions_fig	Update instructions/README	6 years ago PA1_template.Rmd	Added "keep_md" YAML to template	5 years ago README.md	figures --> figure	5 years ago activity.zip	Add activity dataset	6 years ago README.md Introduction It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the "quantified self" movement -- a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.
+
+This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
+
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(stringr)
+library(RODBC)
+library(ggfortify)#autoplot
+#1.Code for reading in the dataset and/or processing the data
+setwd("C:\\Users\\CPUser\\Desktop\\Data analytics\\C5_Reproducible Research\\repdata_data_activity")
+#read data fram
+df <- read.csv("activity.csv")
+str(df)
+```
+
+##Convent Factor to date time
+
+```{r}
+df$date <- as.POSIXct(df$date, format="%Y-%m-%d")
+range(df$date)
+str(df)
+summary(df)
+dim(df)
+```
+### Filler N/A 
+```{r}
+s_steps<-aggregate(df$steps,by=list(df$date),FUN=sum,na.rm=TRUE) 
+colnames(s_steps) <- c( "Date", "Step")
+summary(s_steps)
+dim(s_steps)
+```
+##2.Histogram of the total number of steps taken each day
+```{r}
+S1 <- ggplot(s_steps, aes(x = Step )) + geom_histogram (color="darkblue", fill="lightblue")+ labs(subtitle="Total number of steps",title = "Histogram of the total number of steps taken each day(NA removed)")
+print(S1)
+```
+##3.Mean and median number of steps taken each day
+```{r}
+mean(s_steps$Step)
+median(s_steps$Step)
+```
+##4.Time series plot of the average number of steps taken
+```{r}
+avg_steps<-aggregate(df$steps,by=list(df$interval),FUN=mean,na.rm=TRUE)
+colnames(avg_steps) <- c("interval","Step")
+dt <- ts(avg_steps, start=1,frequency=1)
+autoplot(dt[,"Step" ],colour = "blue")+
+    ggtitle("Time series plot of the average number of steps taken ") +
+    xlab("Step") +
+    ylab("Interval")
+```
+##5.The 5-minute interval that, on average, contains the maximum number of steps
+```{r}
+avg_steps[avg_steps$Step == max(avg_steps$Step),1]
+```
+##6.Code to describe and show a strategy for imputing missing data
+```{r}
+sum(is.na(df$steps))
+df$steps[is.na(df$steps)] <- mean(df$steps,na.rm=TRUE)
+sum(is.na(df$steps))
+```
+##7.Histogram with Repaced NA values
+```{r}
+head(df)
+s2_steps<-aggregate(df$steps,by=list(df$date),FUN=sum,na.rm=TRUE) 
+colnames(s2_steps) <- c( "Date", "Step")
+S2 <- ggplot(s2_steps, aes(x = Step )) + geom_histogram (color = "blue", fill="red")+ labs(subtitle="Total number of steps",title = "Histogram of the total number of steps taken each day(imputing missing data)")
+print(S2)
+ mean(s2_steps$Step)
+ median(s2_steps$Step)
+```
+##8.Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+```{r}
+ # Convert date into weekdays
+df$days <- tolower(weekdays(df$date))
+head(df)
+df$day_type<-ifelse   (df$days=="เสาร์"  |  df$day  =="อาทิตย์","weekend","weekday")
+
+#average number of steps taken per 5-minute
+avg_steps<-aggregate(df$steps,by=list(df$interval,df$day_type),FUN=mean,na.rm=TRUE)
+colnames(avg_steps) <- c("interval","day_type","Steps")
+
+#plot comparing
+S3 <- ggplot(aes(x=interval,y=Steps),data=avg_steps)+geom_line(color ="blue")+facet_wrap(~avg_steps$day_type)
+
+print(S3)
+
+```
+
+
+
